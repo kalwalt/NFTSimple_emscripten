@@ -384,7 +384,7 @@ static int setupCamera(const char *cparam_name, char *vconf, ARParamLT **cparamL
 #endif
     if ((*cparamLT_p = arParamLTCreate(&cparam, AR_PARAM_LT_DEFAULT_OFFSET)) == NULL) {
         ARLOGe("setupCamera(): Error: arParamLTCreate.\n");
-        arVideoClose();
+        //arVideoClose();
         return (FALSE);
     }
 
@@ -534,8 +534,8 @@ static void cleanup(void)
     gArglSettings = NULL;
 
     // Camera cleanup.
-	arVideoCapStop();
-	arVideoClose();
+	//arVideoCapStop();
+	//arVideoClose();
 #ifdef _WIN32
 	CoUninitialize();
 #endif
@@ -559,7 +559,7 @@ static void Keyboard(unsigned char key, int x, int y)
 			ARLOG(" q or [esc]    Quit demo.\n");
 			ARLOG(" ? or /        Show this help.\n");
 			ARLOG("\nAdditionally, the ARVideo library supplied the following help text:\n");
-			arVideoDispOption();
+			//arVideoDispOption();
 			break;
 		default:
 			break;
