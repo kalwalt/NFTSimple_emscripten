@@ -309,7 +309,7 @@ static void DrawCubeUpdate(float timeDelta)
 }
 
 static int initCamera(int xsize, int ysize){
-	videoFrameSize = 640 * 480 * 4 * sizeof(ARUint8);
+	videoFrameSize = xsize * ysize * 4 * sizeof(ARUint8);
 	videoFrame = (ARUint8*) malloc(videoFrameSize);
 	videoFrame = EM_ASM_INT({
 		// Grab elements, create settings, etc.
@@ -322,7 +322,7 @@ static int initCamera(int xsize, int ysize){
         	//video.src = window.URL.createObjectURL(stream);
         	video.srcObject = stream;
         	video.play();
-					return video.data;
+					return video.srcObject;
     			});
 				}
 			}
