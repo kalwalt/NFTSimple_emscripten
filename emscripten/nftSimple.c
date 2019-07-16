@@ -322,9 +322,10 @@ static int initCamera(int xsize, int ysize){
         	//video.src = window.URL.createObjectURL(stream);
         	video.srcObject = stream;
         	video.play();
-					return video.srcObject;
+
     			});
 				}
+				return video.srcObject;
 			}
 		);
 		ARLOGe("video data: ", videoFrame);
