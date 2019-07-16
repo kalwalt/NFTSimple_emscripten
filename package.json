@@ -1,0 +1,41 @@
+{
+  "name": "NFTSimple_emscripten",
+  "version": "0.0.1",
+  "main": "js/index",
+  "typings": "js/index",
+  "description": "Emscripten port of ARToolKit NFT example to JavaScript",
+  "keywords": [
+    "ARToolKit",
+    "AR",
+    "Augmented Reality",
+    "NFT"
+  ],
+  "author": "kalwalt (https://github.com/kalwalt)",
+  "repository": "git://https://github.com/kalwalt/NFTSimple_emscripten.git",
+  "homepage": "https://github.com/kalwalt/NFTSimple_emscripten",
+  "contributors": [
+    "Github Contributors (https://github.com/artoolkit/jsartoolkit5/graphs/contributors)"
+  ],
+  "bugs": {
+    "url": "https://github.com/kalwalt/NFTSimple_emscripten/issues"
+  },
+  "dependencies": {
+    "json2csv": "^4.1.5"
+  },
+  "devDependencies": {
+    "grunt": "^0.4.5",
+    "grunt-cli": "^1.2.0",
+    "grunt-jsdoc": "^1.1.0",
+    "http-server": "^0.10.0",
+    "ink-docstrap": "^1.1.4",
+    "jsdoc": "^3.4.0",
+    "opener": "^1.4.3",
+    "qunit": "^2.4.1",
+    "watch": "^0.18.0"
+  },
+  "scripts": {
+    "build": "node tools/makem.js; echo Built at `date`",
+    "watch": "./node_modules/.bin/watch 'npm run build' ./js/"
+  },
+  "license": "LGPL-3.0"
+}
