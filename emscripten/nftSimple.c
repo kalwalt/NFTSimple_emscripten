@@ -138,11 +138,6 @@ static int setupCamera(const char *cparam_name, char *vconf, ARParamLT **cparamL
 static int initNFT(ARParamLT *cparamLT, AR_PIXEL_FORMAT pixFormat);
 static int loadNFTData(void);
 static void cleanup(void);
-/*static void Keyboard(unsigned char key, int x, int y);
-static void Visibility(int visible);
-static void Reshape(int w, int h);
-static void Display(void);
-*/
 // ============================================================================
 //	Functions
 // ============================================================================
