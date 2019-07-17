@@ -63,12 +63,9 @@
 #endif
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 #include <math.h>
-#ifdef __APPLE__
-#  include <GLUT/glut.h>
-#else
-#  include <GL/glut.h>
-#endif
+
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #include <emscripten/html5.h>
@@ -90,7 +87,7 @@
 //	Constants
 // ============================================================================
 
-#define PAGES_MAX               10          // Maximum number of pages expected. You can change this down (to save memory) or up (to accomodate more pages.)
+#define PAGES_MAX           10          // Maximum number of pages expected. You can change this down (to save memory) or up (to accomodate more pages.)
 
 #define VIEW_SCALEFACTOR		1.0			// Units received from ARToolKit tracking will be multiplied by this factor before being used in OpenGL drawing.
 #define VIEW_DISTANCE_MIN		10.0		// Objects closer to the camera than this will not be displayed. OpenGL units.
@@ -133,40 +130,39 @@ static ARdouble cameraLens[16];
 static ARUint8 *videoFrame = NULL;
 static int videoFrameSize;
 
-
 // ============================================================================
 //	Function prototypes
 // ============================================================================
-static int initCamera(int xsize, ysize);
+static int initCamera(int xsize, int ysize);
 static int setupCamera(const char *cparam_name, char *vconf, ARParamLT **cparamLT_p);
 static int initNFT(ARParamLT *cparamLT, AR_PIXEL_FORMAT pixFormat);
 static int loadNFTData(void);
 static void cleanup(void);
-static void Keyboard(unsigned char key, int x, int y);
+/*static void Keyboard(unsigned char key, int x, int y);
 static void Visibility(int visible);
 static void Reshape(int w, int h);
 static void Display(void);
-
+*/
 // ============================================================================
 //	Functions
 // ============================================================================
 
 int main(int argc, char** argv)
 {
+	printf("we are here");
 	char glutGamemode[32];
 	char *cparam_name = NULL;
 	char vconf[] = "";
     const char markerConfigDataFilename[] = "Data2/markers.dat";
 
+
 #ifdef DEBUG
     arLogLevel = AR_LOG_LEVEL_DEBUG;
 #endif
 
-    //
+  //
 	// Library inits.
 	//
-
-	glutInit(&argc, argv);
 
     arUtilChangeToResourcesDirectory(AR_UTIL_RESOURCES_DIRECTORY_BEHAVIOR_BEST, NULL);
 
@@ -204,24 +200,22 @@ int main(int argc, char** argv)
 	// Graphics setup.
 	//
 
-	// Set up GL context(s) for OpenGL to draw into.
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
 	if (!prefWindowed) {
 		if (prefRefresh) sprintf(glutGamemode, "%ix%i:%i@%i", prefWidth, prefHeight, prefDepth, prefRefresh);
 		else sprintf(glutGamemode, "%ix%i:%i", prefWidth, prefHeight, prefDepth);
-		glutGameModeString(glutGamemode);
-		glutEnterGameMode();
+		//glutGameModeString(glutGamemode);
+		//glutEnterGameMode();
 	} else {
-		glutInitWindowSize(gCparamLT->param.xsize, gCparamLT->param.ysize);
-		glutCreateWindow(argv[0]);
+		//glutInitWindowSize(gCparamLT->param.xsize, gCparamLT->param.ysize);
+		//glutCreateWindow(argv[0]);
 	}
 
 	// Setup ARgsub_lite library for current OpenGL context.
-	if ((gArglSettings = arglSetupForCurrentContext(&(gCparamLT->param), arVideoGetPixelFormat())) == NULL) {
+	/*if ((gArglSettings = arglSetupForCurrentContext(&(gCparamLT->param), arVideoGetPixelFormat())) == NULL) {
 		ARLOGe("main(): arglSetupForCurrentContext() returned error.\n");
 		cleanup();
 		exit(-1);
-	}
+	}*/
 	arUtilTimerReset();
 
     //
@@ -250,68 +244,13 @@ int main(int argc, char** argv)
 		return (FALSE);
 	}
 
-	// Register GLUT event-handling callbacks.
-	// NB: mainLoop() is registered by Visibility.
-	glutDisplayFunc(Display);
-	glutReshapeFunc(Reshape);
-	//glutVisibilityFunc(Visibility);
-	glutKeyboardFunc(Keyboard);
-
-	glutMainLoop();
-
-	return (0);
-}
-
-// Something to look at, draw a rotating colour cube.
-static void DrawCube(void)
-{
-    // Colour cube data.
-    int i;
-	float fSize = 40.0f;
-    const GLfloat cube_vertices [8][3] = {
-        /* +z */ {0.5f, 0.5f, 0.5f}, {0.5f, -0.5f, 0.5f}, {-0.5f, -0.5f, 0.5f}, {-0.5f, 0.5f, 0.5f},
-        /* -z */ {0.5f, 0.5f, -0.5f}, {0.5f, -0.5f, -0.5f}, {-0.5f, -0.5f, -0.5f}, {-0.5f, 0.5f, -0.5f} };
-    const GLubyte cube_vertex_colors [8][4] = {
-        {255, 255, 255, 255}, {255, 255, 0, 255}, {0, 255, 0, 255}, {0, 255, 255, 255},
-        {255, 0, 255, 255}, {255, 0, 0, 255}, {0, 0, 0, 255}, {0, 0, 255, 255} };
-    const GLubyte cube_faces [6][4] = { /* ccw-winding */
-        /* +z */ {3, 2, 1, 0}, /* -y */ {2, 3, 7, 6}, /* +y */ {0, 1, 5, 4},
-        /* -x */ {3, 0, 4, 7}, /* +x */ {1, 2, 6, 5}, /* -z */ {4, 5, 6, 7} };
-
-    glPushMatrix(); // Save world coordinate system.
-    glRotatef(gDrawRotateAngle, 0.0f, 0.0f, 1.0f); // Rotate about z axis.
-    glScalef(fSize, fSize, fSize);
-    glTranslatef(0.0f, 0.0f, 0.5f); // Place base of cube on marker surface.
-    glDisable(GL_LIGHTING);
-    glDisable(GL_TEXTURE_2D);
-    glDisable(GL_BLEND);
-    glColorPointer(4, GL_UNSIGNED_BYTE, 0, cube_vertex_colors);
-    glVertexPointer(3, GL_FLOAT, 0, cube_vertices);
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_COLOR_ARRAY);
-    for (i = 0; i < 6; i++) {
-        glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_BYTE, &(cube_faces[i][0]));
-    }
-    glDisableClientState(GL_COLOR_ARRAY);
-    glColor4ub(0, 0, 0, 255);
-    for (i = 0; i < 6; i++) {
-        glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_BYTE, &(cube_faces[i][0]));
-    }
-    glPopMatrix();    // Restore world coordinate system.
-}
-
-static void DrawCubeUpdate(float timeDelta)
-{
-	if (gDrawRotate) {
-		gDrawRotateAngle += timeDelta * 45.0f; // Rotate cube at 45 degrees per second.
-		if (gDrawRotateAngle > 360.0f) gDrawRotateAngle -= 360.0f;
-	}
+	return 0;
 }
 
 static int initCamera(int xsize, int ysize){
 	videoFrameSize = xsize * ysize * 4 * sizeof(ARUint8);
 	videoFrame = (ARUint8*) malloc(videoFrameSize);
-	videoFrame = EM_ASM_INT({
+	videoFrame = (ARUint8*) EM_ASM_INT({
 		// Grab elements, create settings, etc.
 	var video = document.getElementById('video');
 
@@ -325,10 +264,11 @@ static int initCamera(int xsize, int ysize){
 
     			});
 				}
-				return video.srcObject;
+				//return video.srcObject;
 			}
+			return video.srcObject;
 		);
-		ARLOGe("video data: ", videoFrame);
+		//ARLOGe("video data: ", videoFrame);
 	return(TRUE);
 }
 
@@ -337,19 +277,6 @@ static int setupCamera(const char *cparam_name, char *vconf, ARParamLT **cparamL
     ARParam			cparam;
 	int				xsize, ysize;
     AR_PIXEL_FORMAT pixFormat;
-
-    // Open the video path.
-  //  if (arVideoOpen(vconf) < 0) {
-  //  	ARLOGe("setupCamera(): Unable to open connection to camera.\n");
-  //  	return (FALSE);
-	//}
-
-    // Find the size of the window.
-  //  if (arVideoGetSize(&xsize, &ysize) < 0) {
-  //      ARLOGe("setupCamera(): Unable to determine camera frame size.\n");
-  //      arVideoClose();
-  //      return (FALSE);
-  //  }
 		xsize = 640;
 		ysize = 480;
     ARLOGi("Camera image size (x,y) = (%d,%d)\n", xsize, ysize);
@@ -367,7 +294,6 @@ static int setupCamera(const char *cparam_name, char *vconf, ARParamLT **cparamL
 	if (cparam_name && *cparam_name) {
         if (arParamLoad(cparam_name, 1, &cparam) < 0) {
 		    ARLOGe("setupCamera(): Error loading parameter file %s for camera.\n", cparam_name);
-            //arVideoClose();
             return (FALSE);
         }
     } else {
@@ -384,7 +310,6 @@ static int setupCamera(const char *cparam_name, char *vconf, ARParamLT **cparamL
 #endif
     if ((*cparamLT_p = arParamLTCreate(&cparam, AR_PARAM_LT_DEFAULT_OFFSET)) == NULL) {
         ARLOGe("setupCamera(): Error: arParamLTCreate.\n");
-        //arVideoClose();
         return (FALSE);
     }
 
@@ -524,50 +449,25 @@ static void cleanup(void)
 
     // NFT cleanup.
     unloadNFTData();
-	ARLOGd("Cleaning up ARToolKit NFT handles.\n");
+		ARLOGd("Cleaning up ARToolKit NFT handles.\n");
     ar2DeleteHandle(&ar2Handle);
     kpmDeleteHandle(&kpmHandle);
     arParamLTFree(&gCparamLT);
 
-    // OpenGL cleanup.
-    arglCleanup(gArglSettings);
-    gArglSettings = NULL;
-
-    // Camera cleanup.
-	//arVideoCapStop();
-	//arVideoClose();
 #ifdef _WIN32
 	CoUninitialize();
 #endif
 }
-
-static void Keyboard(unsigned char key, int x, int y)
-{
-	switch (key) {
-		case 0x1B:						// Quit.
-		case 'Q':
-		case 'q':
-			cleanup();
-			exit(0);
-			break;
-		case ' ':
-			gDrawRotate = !gDrawRotate;
-			break;
-		case '?':
-		case '/':
-			ARLOG("Keys:\n");
-			ARLOG(" q or [esc]    Quit demo.\n");
-			ARLOG(" ? or /        Show this help.\n");
-			ARLOG("\nAdditionally, the ARVideo library supplied the following help text:\n");
-			//arVideoDispOption();
-			break;
-		default:
-			break;
-	}
-}
-
+/*
 static void mainLoop(void)
 {
+    //SDL_Renderer *renderer;
+
+    // example: draw a moving rectangle
+
+    // red background
+    //SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+    //SDL_RenderClear(renderer);
 	static int ms_prev;
 	int ms;
 	float s_elapsed;
@@ -581,7 +481,8 @@ static void mainLoop(void)
     int             i, j, k;
 
 	// Find out how long since mainLoop() last ran.
-	ms = glutGet(GLUT_ELAPSED_TIME);
+	//ms = glutGet(GLUT_ELAPSED_TIME);
+	ms = 120;
 	s_elapsed = (float)(ms - ms_prev) * 0.001f;
 	if (s_elapsed < 0.01f) return; // Don't update more often than 100 Hz.
 	ms_prev = ms;
@@ -675,20 +576,10 @@ static void mainLoop(void)
         }
 
 		// Tell GLUT the display has changed.
-		glutPostRedisplay();
-	}
-}
+		//glutPostRedisplay();
+		//SDL_RenderPresent(renderer);
 
-//
-//	This function is called on events when the visibility of the
-//	GLUT window changes (including when it first becomes visible).
-//
-static void Visibility(int visible)
-{
-	if (visible == GLUT_VISIBLE) {
-		glutIdleFunc(mainLoop);
-	} else {
-		glutIdleFunc(NULL);
+	 //ctx->iteration++;
 	}
 }
 
@@ -765,5 +656,5 @@ static void Display(void)
     // Add your own 2D overlays here.
     // --->
 
-	glutSwapBuffers();
 }
+*/
