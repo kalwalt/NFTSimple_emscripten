@@ -123,16 +123,14 @@ FLAGS += ' -s USE_ZLIB=1';
 //FLAGS += ' -s NO_BROWSER=1 '; // for 20k less
 FLAGS += ' --memory-init-file 0 '; // for memless file
 //FLAGS += ' -s BINARYEN_TRAP_MODE=clamp'
-FLAGS += ' -DUSE_GSTREAMER_1 ';
-
-//var PRE_FLAGS = ' --pre-js ' + path.resolve(__dirname, '../js/artoolkit.api.js') +' ';
 
 FLAGS += ' --bind ';
 FLAGS += ' -msse';
 FLAGS += ' -msse2';
 FLAGS += ' -msse3';
 FLAGS += ' -mssse3';
-var CFLAGS = ' -Wimplicit-function-declaration -DHAVE_NFT=1 -DUSE_GSTREAMER_1 -s USE_PTHREADS=1 -I/usr/include/gstreamer-1.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include'
+var CFLAGS = ' -Wimplicit-function-declaration -DHAVE_NFT=1 -s USE_PTHREADS=1'
+//-I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include
 /* DEBUG FLAGS */
 var DEBUG_FLAGS = ' -g ';
 // DEBUG_FLAGS += ' -s ASSERTIONS=2 '
@@ -141,6 +139,8 @@ DEBUG_FLAGS += ' -s ASSERTIONS=1 '
 // DEBUG_FLAGS += ' -s EMTERPRETIFY_ADVISE=1 '
 DEBUG_FLAGS += ' -s ALLOW_MEMORY_GROWTH=1';
 DEBUG_FLAGS += '  -s DEMANGLE_SUPPORT=1 ';
+
+var EMRUN_FLAGS = ' --emrun '
 
 var INCLUDES = [
 	path.resolve(__dirname, ARTOOLKIT5_ROOT + '/include'),
@@ -212,14 +212,14 @@ var compile_libjpeg = format(EMCC + ' ' + INCLUDES + ' '
 	+ FLAGS + ' ' + DEFINES + ' -o {OUTPUT_PATH}libjpeg.bc ',
 		OUTPUT_PATH);
 
-var compile_combine = format(EMCC + ' ' + INCLUDES + ' '
+/*var compile_combine = format(EMCC + ' ' + INCLUDES + ' '
 	+ ' {OUTPUT_PATH}*.bc ' + MAIN_SOURCES
 	+ FLAGS + ' -s WASM=0' + ' '  + DEBUG_FLAGS + DEFINES + ' -o {OUTPUT_PATH}{BUILD_FILE} ',
-	OUTPUT_PATH, OUTPUT_PATH, BUILD_DEBUG_FILE);
+	OUTPUT_PATH, OUTPUT_PATH, BUILD_DEBUG_FILE);*/
 
 var compile_html5 = format(EMCC + ' '  + INCLUDES + ' '
 	+ ' {OUTPUT_PATH}*.bc ' + MAIN_SOURCES
-	+ FLAGS  + ' ' + CFLAGS + DEFINES +' -s LEGACY_GL_EMULATION=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0' + ' -o {OUTPUT_PATH}{BUILD_FILE} ',
+	+ FLAGS  + ' ' + CFLAGS + DEFINES + EMRUN_FLAGS + ' -s WASM=1' + ' -s ERROR_ON_UNDEFINED_SYMBOLS=0' + ' -o {OUTPUT_PATH}{BUILD_FILE} ',
 	OUTPUT_PATH, OUTPUT_PATH, BUILD_HTML5);
 /*
 /*
@@ -265,10 +265,6 @@ addJob(compile_arlib);
 //addJob(compile_kpm);
 // compile_kpm
 addJob(compile_libjpeg);
-//addJob(compile_combine);
-//addJob(compile_wasm);
-//addJob(compile_combine_min);
 addJob(compile_html5);
-// addJob(compile_all);
 
 runJob();
