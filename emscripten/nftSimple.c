@@ -457,27 +457,21 @@ static void cleanup(void)
 	CoUninitialize();
 #endif
 }
-/*
+
 static void mainLoop(void)
 {
-    //SDL_Renderer *renderer;
-
-    // example: draw a moving rectangle
-
-    // red background
-    //SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-    //SDL_RenderClear(renderer);
+  // example: draw a moving rectangle
 	static int ms_prev;
 	int ms;
 	float s_elapsed;
 	AR2VideoBufferT *image;
 
-    // NFT results.
-    static int detectedPage = -2; // -2 Tracking not inited, -1 tracking inited OK, >= 0 tracking online on page.
-    static float trackingTrans[3][4];
+  // NFT results.
+  static int detectedPage = -2; // -2 Tracking not inited, -1 tracking inited OK, >= 0 tracking online on page.
+  static float trackingTrans[3][4];
 
 
-    int             i, j, k;
+  int             i, j, k;
 
 	// Find out how long since mainLoop() last ran.
 	//ms = glutGet(GLUT_ELAPSED_TIME);
@@ -573,87 +567,5 @@ static void mainLoop(void)
                 }
             }
         }
-
-		// Tell GLUT the display has changed.
-		//glutPostRedisplay();
-		//SDL_RenderPresent(renderer);
-
-	 //ctx->iteration++;
 	}
 }
-
-//
-//	This function is called when the
-//	GLUT window is resized.
-//
-static void Reshape(int w, int h)
-{
-    gWindowW = w;
-    gWindowH = h;
-
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glViewport(0, 0, (GLsizei) w, (GLsizei) h);
-
-	// Call through to anyone else who needs to know about window sizing here.
-}
-
-//
-// This function is called when the window needs redrawing.
-//
-static void Display(void)
-{
-    int i;
-
-	// Select correct buffer for this context.
-	glDrawBuffer(GL_BACK);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear the buffers for new frame.
-
-	arglDispImage(gArglSettings);
-
-    // Set up 3D mode.
-	glMatrixMode(GL_PROJECTION);
-#ifdef ARDOUBLE_IS_FLOAT
-	glLoadMatrixf(cameraLens);
-#else
-	glLoadMatrixd(cameraLens);
-#endif
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-    glEnable(GL_DEPTH_TEST);
-
-    // Set any initial per-frame GL state you require here.
-    // --->
-
-    // Lighting and geometry that moves with the camera should be added here.
-    // (I.e. should be specified before marker pose transform.)
-    // --->
-
-    for (i = 0; i < markersNFTCount; i++) {
-
-        if (markersNFT[i].valid) {
-
-#ifdef ARDOUBLE_IS_FLOAT
-            glLoadMatrixf(markersNFT[i].pose.T);
-#else
-            glLoadMatrixd(markersNFT[i].pose.T);
-#endif
-            // All lighting and geometry to be drawn relative to the marker goes here.
-            // --->
-            DrawCube();
-        }
-    }
-
-    // Set up 2D mode.
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(0, (GLdouble)gWindowW, 0, (GLdouble)gWindowH, -1.0, 1.0);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    glDisable(GL_LIGHTING);
-    glDisable(GL_DEPTH_TEST);
-
-    // Add your own 2D overlays here.
-    // --->
-
-}
-*/
