@@ -51,6 +51,7 @@ var ar_sources = [
 	'Video/video.c',
 	//'Video/video2.c',
 	'ARUtil/log.c',
+	'ARUtil/time.c',
   'ARUtil/file_utils.c',
 	'ARUtil/thread_sub.c',
 	//'Video/videoLuma.c',

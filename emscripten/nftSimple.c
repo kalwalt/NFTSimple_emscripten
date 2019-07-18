@@ -145,7 +145,7 @@ int main(int argc, char** argv)
 	char glutGamemode[32];
 	char *cparam_name = NULL;
 	char vconf[] = "";
-    const char markerConfigDataFilename[] = "Data2/markers.dat";
+  const char markerConfigDataFilename[] = "app/Data2/markers.dat";
 
 
 #ifdef DEBUG
@@ -156,7 +156,7 @@ int main(int argc, char** argv)
 	// Library inits.
 	//
 
-    arUtilChangeToResourcesDirectory(AR_UTIL_RESOURCES_DIRECTORY_BEHAVIOR_BEST, NULL);
+    //arUtilChangeToResourcesDirectory(AR_UTIL_RESOURCES_DIRECTORY_BEHAVIOR_BEST, NULL);
 
 	//
 	// Video setup.
@@ -183,32 +183,12 @@ int main(int argc, char** argv)
     // Create the OpenGL projection from the calibrated camera parameters.
     arglCameraFrustumRH(&(gCparamLT->param), VIEW_DISTANCE_MIN, VIEW_DISTANCE_MAX, cameraLens);
 
-    if (!initNFT(gCparamLT, arVideoGetPixelFormat())) {
+    if (!initNFT(gCparamLT, AR_PIXEL_FORMAT_RGBA)) {
 		ARLOGe("main(): Unable to init NFT.\n");
 		exit(-1);
     }
 
-	//
-	// Graphics setup.
-	//
-
-	if (!prefWindowed) {
-		if (prefRefresh) sprintf(glutGamemode, "%ix%i:%i@%i", prefWidth, prefHeight, prefDepth, prefRefresh);
-		else sprintf(glutGamemode, "%ix%i:%i", prefWidth, prefHeight, prefDepth);
-		//glutGameModeString(glutGamemode);
-		//glutEnterGameMode();
-	} else {
-		//glutInitWindowSize(gCparamLT->param.xsize, gCparamLT->param.ysize);
-		//glutCreateWindow(argv[0]);
-	}
-
-	// Setup ARgsub_lite library for current OpenGL context.
-	/*if ((gArglSettings = arglSetupForCurrentContext(&(gCparamLT->param), arVideoGetPixelFormat())) == NULL) {
-		ARLOGe("main(): arglSetupForCurrentContext() returned error.\n");
-		cleanup();
-		exit(-1);
-	}*/
-	arUtilTimerReset();
+		arUtilTimerReset();
 
     //
     // Markers setup.
