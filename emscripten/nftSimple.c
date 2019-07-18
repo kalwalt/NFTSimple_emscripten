@@ -121,9 +121,6 @@ static long                 gCallCountMarkerDetect = 0;
 static int gWindowW;
 static int gWindowH;
 static ARParamLT *gCparamLT = NULL;
-static ARGL_CONTEXT_SETTINGS_REF gArglSettings = NULL;
-static int gDrawRotate = FALSE;
-static float gDrawRotateAngle = 0;			// For use in drawing.
 static ARdouble cameraLens[16];
 
 //Video data
@@ -211,7 +208,7 @@ int main(int argc, char** argv)
 		cleanup();
 		exit(-1);
 	}*/
-//	arUtilTimerReset();
+	arUtilTimerReset();
 
     //
     // Markers setup.
@@ -232,12 +229,7 @@ int main(int argc, char** argv)
 		cleanup();
 		exit(-1);
     }
-	arUtilTimerReset();
-    // Start the video.
-    if (arVideoCapStart() != 0) {
-    	ARLOGe("setupCamera(): Unable to begin camera data capture.\n");
-		return (FALSE);
-	}
+	//arUtilTimerReset();
 
 	return 0;
 }
@@ -253,7 +245,6 @@ static int initCamera(int xsize, int ysize){
 	if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
     	// Not adding `{ audio: true }` since we only want video now
     	navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
-        	//video.src = window.URL.createObjectURL(stream);
         	video.srcObject = stream;
         	video.play();
 
@@ -457,7 +448,7 @@ static void cleanup(void)
 	CoUninitialize();
 #endif
 }
-
+/*
 static void mainLoop(void)
 {
   // example: draw a moving rectangle
@@ -569,3 +560,4 @@ static void mainLoop(void)
         }
 	}
 }
+*/
