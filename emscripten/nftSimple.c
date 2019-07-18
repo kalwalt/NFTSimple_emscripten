@@ -144,7 +144,7 @@ static void cleanup(void);
 
 int main(int argc, char** argv)
 {
-	printf("we are here");
+
 	char glutGamemode[32];
 	char *cparam_name = NULL;
 	char vconf[] = "";
@@ -211,7 +211,7 @@ int main(int argc, char** argv)
 		cleanup();
 		exit(-1);
 	}*/
-	arUtilTimerReset();
+//	arUtilTimerReset();
 
     //
     // Markers setup.
@@ -232,7 +232,7 @@ int main(int argc, char** argv)
 		cleanup();
 		exit(-1);
     }
-
+	arUtilTimerReset();
     // Start the video.
     if (arVideoCapStart() != 0) {
     	ARLOGe("setupCamera(): Unable to begin camera data capture.\n");
@@ -448,7 +448,11 @@ static void cleanup(void)
     ar2DeleteHandle(&ar2Handle);
     kpmDeleteHandle(&kpmHandle);
     arParamLTFree(&gCparamLT);
-
+		if (videoFrame) {
+			free(videoFrame);
+			videoFrame = NULL;
+			videoFrameSize = 0;
+		}
 #ifdef _WIN32
 	CoUninitialize();
 #endif
