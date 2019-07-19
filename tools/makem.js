@@ -31,6 +31,7 @@ var SOURCE_PATH = path.resolve(__dirname, '../emscripten/') + '/';
 var OUTPUT_PATH = path.resolve(__dirname, '../app/build/') + '/';
 
 var BUILD_HTML5 = 'nftSimple.js';
+var PRELOAD_FILE = ' --preload-file app/Data2/markers.dat';
 
 var MAIN_SOURCES = [
 	'ARMarkerNFT.c',
@@ -220,7 +221,7 @@ var compile_libjpeg = format(EMCC + ' ' + INCLUDES + ' '
 
 var compile_html5 = format(EMCC + ' '  + INCLUDES + ' '
 	+ ' {OUTPUT_PATH}*.bc ' + MAIN_SOURCES
-	+ FLAGS  + ' ' + CFLAGS + DEFINES + EMRUN_FLAGS + ' -s WASM=1' + ' -s ERROR_ON_UNDEFINED_SYMBOLS=0' + ' -o {OUTPUT_PATH}{BUILD_FILE} ',
+	+ FLAGS  + ' ' + CFLAGS + DEFINES + EMRUN_FLAGS + ' -s WASM=1' + ' -s ERROR_ON_UNDEFINED_SYMBOLS=0' + PRELOAD_FILE + ' -o {OUTPUT_PATH}{BUILD_FILE} ',
 	OUTPUT_PATH, OUTPUT_PATH, BUILD_HTML5);
 /*
 /*
