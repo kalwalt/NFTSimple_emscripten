@@ -96,7 +96,9 @@
 // ============================================================================
 //	Global variables
 // ============================================================================
-
+struct Test {
+	int numb;
+};
 // Preferences.
 static int prefWindowed = TRUE;
 static int prefWidth = 640;					// Fullscreen mode width.
@@ -126,12 +128,13 @@ static ARdouble cameraLens[16];
 //Video data
 static ARUint8 *videoFrame = NULL;
 static int videoFrameSize;
+AR_PIXEL_FORMAT pixFormat = AR_PIXEL_FORMAT_RGBA;
 
 // ============================================================================
 //	Function prototypes
 // ============================================================================
-static int setupCamera(const char *cparam_name, char *vconf, ARParamLT **cparamLT_p);
-static int initNFT(ARParamLT *cparamLT, AR_PIXEL_FORMAT pixFormat);
+static int setupCamera(const char *cparam_name, int xsize, int ysize, ARParamLT **cparamLT_p);
+static int initNFT(ARParamLT *cparamLT);
 static int loadNFTData(void);
 static void cleanup(void);
 // ============================================================================
@@ -143,7 +146,6 @@ int main(int argc, char** argv)
 
 	char glutGamemode[32];
 	char *cparam_name = NULL;
-	char vconf[] = "";
   const char markerConfigDataFilename[] = "app/Data2/markers.dat";
 
 
@@ -151,26 +153,10 @@ int main(int argc, char** argv)
     arLogLevel = AR_LOG_LEVEL_DEBUG;
 #endif
 
-  //
-	// Library inits.
-	//
 
-    //arUtilChangeToResourcesDirectory(AR_UTIL_RESOURCES_DIRECTORY_BEHAVIOR_BEST, NULL);
 
-	//
-	// Video setup.
-	//
 
-#ifdef _WIN32
-	CoInitialize(NULL);
-#endif
-
-	if (!initCamera(prefWidth, prefHeight)){
-		ARLOGe("main(): Unable to set up web camera.\n");
-		exit(-1);
-	}
-
-	if (!setupCamera(cparam_name, vconf, &gCparamLT)) {
+	if (!setupCamera(cparam_name,640, 480, &gCparamLT)) {
 		ARLOGe("main(): Unable to set up AR camera.\n");
 		exit(-1);
 	}
@@ -182,7 +168,7 @@ int main(int argc, char** argv)
     // Create the OpenGL projection from the calibrated camera parameters.
     arglCameraFrustumRH(&(gCparamLT->param), VIEW_DISTANCE_MIN, VIEW_DISTANCE_MAX, cameraLens);
 
-    if (!initNFT(gCparamLT, AR_PIXEL_FORMAT_RGBA)) {
+    if (!initNFT(gCparamLT)) {
 		ARLOGe("main(): Unable to init NFT.\n");
 		exit(-1);
     }
@@ -214,21 +200,14 @@ int main(int argc, char** argv)
 }
 */
 
-static int setupCamera(const char *cparam_name, char *vconf, ARParamLT **cparamLT_p)
+static int setupCamera(const char *cparam_name, int xsize, int ysize, ARParamLT **cparamLT_p)
 {
     ARParam			cparam;
-	int				xsize, ysize;
-    AR_PIXEL_FORMAT pixFormat;
-		xsize = 640;
-		ysize = 480;
     ARLOGi("Camera image size (x,y) = (%d,%d)\n", xsize, ysize);
 
 	// Get the format in which the camera is returning pixels.
-	//pixFormat = arVideoGetPixelFormat();
-	pixFormat = AR_PIXEL_FORMAT_RGBA;
 	if (pixFormat == AR_PIXEL_FORMAT_INVALID) {
     	ARLOGe("setupCamera(): Camera is using unsupported pixel format.\n");
-        //arVideoClose();
 		return (FALSE);
 	}
 
@@ -259,7 +238,7 @@ static int setupCamera(const char *cparam_name, char *vconf, ARParamLT **cparamL
 }
 
 // Modifies globals: kpmHandle, ar2Handle.
-static int initNFT(ARParamLT *cparamLT, AR_PIXEL_FORMAT pixFormat)
+static int initNFT(ARParamLT *cparamLT)
 {
     ARLOGd("Initialising NFT.\n");
     //

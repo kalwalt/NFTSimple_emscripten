@@ -64,6 +64,15 @@ out = threadPrint;
 err = threadPrintErr;
 this.alert = threadAlert;
 
+Module['instantiateWasm'] = function(info, receiveInstance) {
+  // Instantiate from the module posted from the main thread.
+  // We can just use sync instantiation in the worker.
+  instance = new WebAssembly.Instance(wasmModule, info);
+  // We don't need the module anymore; new threads will be spawned from the main thread.
+  wasmModule = null;
+  receiveInstance(instance); // The second 'module' parameter is intentionally null here, we don't need to keep a ref to the Module object from here.
+  return instance.exports;
+}
 
 var wasmModule;
 var wasmMemory;
@@ -78,9 +87,21 @@ this.onmessage = function(e) {
       DYNAMIC_BASE = e.data.DYNAMIC_BASE;
       DYNAMICTOP_PTR = e.data.DYNAMICTOP_PTR;
 
-      buffer = e.data.buffer;
+      // The Wasm module will have import fields for STACKTOP and STACK_MAX. At 'load' stage of Worker startup, we are just
+      // spawning this Web Worker to act as a host for future created pthreads, i.e. we do not have a pthread to start up here yet.
+      // (A single Worker can also host multiple pthreads throughout its lifetime, shutting down a pthread will not shut down its hosting Worker,
+      // but the Worker is reused for later spawned pthreads). The 'run' stage below will actually start running a pthread.
+      // The stack space for a pthread is allocated and deallocated when a pthread is actually run, not yet at Worker 'load' stage.
+      // However, the WebAssembly module we are loading up here has import fields for STACKTOP and STACK_MAX, which it needs to get filled in
+      // immediately at Wasm Module instantiation time. The values of these will not get used until pthread is actually running some code, so
+      // we'll proceed to set up temporary invalid values for these fields for import purposes. Then whenever a pthread is launched at 'run' stage
+      // below, these values are rewritten to establish proper stack area for the particular pthread.
+      Module['STACK_MAX'] = Module['STACKTOP']  = 0x7FFFFFFF;
 
-
+      // Module and memory were sent from main thread
+      wasmModule = e.data.wasmModule;
+      wasmMemory = e.data.wasmMemory;
+      buffer = wasmMemory.buffer;
 
       PthreadWorkerInit = e.data.PthreadWorkerInit;
 
