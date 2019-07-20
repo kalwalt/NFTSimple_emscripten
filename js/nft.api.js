@@ -9,11 +9,9 @@
     PATTERN_MARKER: 0,
     BARCODE_MARKER: 1,
 
-    loadCamera: loadCamera,
+    initCamera: initCamera,
 
-    addMarker: addMarker,
-    addMultiMarker: addMultiMarker,
-    addNFTMarker: addNFTMarker
+    //addNFTMarker: addNFTMarker
 
   };
 
