@@ -130,7 +130,6 @@ static int videoFrameSize;
 // ============================================================================
 //	Function prototypes
 // ============================================================================
-static int initCamera(int xsize, int ysize);
 static int setupCamera(const char *cparam_name, char *vconf, ARParamLT **cparamLT_p);
 static int initNFT(ARParamLT *cparamLT, AR_PIXEL_FORMAT pixFormat);
 static int loadNFTData(void);
@@ -138,7 +137,7 @@ static void cleanup(void);
 // ============================================================================
 //	Functions
 // ============================================================================
-
+/*
 int main(int argc, char** argv)
 {
 
@@ -213,30 +212,7 @@ int main(int argc, char** argv)
 
 	return 0;
 }
-
-static int initCamera(int xsize, int ysize){
-	videoFrameSize = xsize * ysize * 4 * sizeof(ARUint8);
-	videoFrame = (ARUint8*) malloc(videoFrameSize);
-	videoFrame = (ARUint8*) EM_ASM_INT({
-		// Grab elements, create settings, etc.
-	var video = document.getElementById('video');
-
-	// Get access to the camera!
-	if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    	// Not adding `{ audio: true }` since we only want video now
-    	navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
-        	video.srcObject = stream;
-        	video.play();
-
-    			});
-				}
-				//return video.srcObject;
-			}
-			return video.srcObject;
-		);
-		//ARLOGe("video data: ", videoFrame);
-	return(TRUE);
-}
+*/
 
 static int setupCamera(const char *cparam_name, char *vconf, ARParamLT **cparamLT_p)
 {
