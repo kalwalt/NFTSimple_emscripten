@@ -36,12 +36,18 @@
             return {}; // Compiling asynchronously, no exports.
         }
     }
+
   var NFTController = function(){
     console.log('NFT ready');
   };
 
   NFTController.prototype.setupCamera = function(src, xsize, ysize){
     nft.setupCamera(src, xsize, ysize);
+  };
+
+  NFTController.prototype.cleanup = function(){
+      nft.cleanup();
+      //Module['cleanup'];
   };
 
   var Test = function(text){
@@ -70,6 +76,10 @@
     Module._setupCamera(src, xsize, ysize);
   };
 
+  /*function cleanup(){
+    Module.cleanup();
+  };*/
+
   // ARToolKit exported JS API
   //
   var nft = {
@@ -79,12 +89,13 @@
     BARCODE_MARKER: 1,
 
     //addNFTMarker: addNFTMarker
-    setupCamera: setupCamera
+    //setupCamera: setupCamera
+    //cleanup: cleanup
 
   };
 
   var FUNCTIONS = [
-    //'setupCamera',
+    'setupCamera',
     'initNFT',
 
     'unloadNFTData',

@@ -12,12 +12,13 @@
       var artoolkit_wasm_url = 'build/nftSimple.wasm';
 </script>
 <script src="build/nftSimple.js"></script>
-<script src="../is/nft.api.js"></script>
+<!--<script src="../is/nft.api.js"></script>-->
 <script>
 var test = new Test('hello');
 var camera = new initCamera();
 var nftc = new NFTController();
-nftc.setupCamera('src', 640, 480);
+//nftc.setupCamera('src', 640, 480);
+nftc.cleanup();
 
 </script>
 </body>

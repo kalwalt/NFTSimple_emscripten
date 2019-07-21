@@ -56,20 +56,14 @@
 //	Includes
 // ============================================================================
 
-#ifdef _WIN32
-#  include <windows.h>
-#  define _USE_MATH_DEFINES
-#  define snprintf _snprintf
-#endif
 #include <stdio.h>
-#include <string.h>
-#include <assert.h>
-#include <math.h>
+#include <string>
+#include <vector>
+#include <unordered_map>
+//#include <assert.h>
+//#include <math.h>
 
-#ifdef __EMSCRIPTEN__
 #include <emscripten.h>
-#include <emscripten/html5.h>
-#endif
 
 #include <AR/ar.h>
 #include <AR/arMulti.h>
@@ -104,15 +98,6 @@ struct arNFTController {
 	ARParamLT *gCparamLT;
 };
 
-struct arNFTController _arNFTController;
-
-// Preferences.
-static int prefWindowed = TRUE;
-static int prefWidth = 640;					// Fullscreen mode width.
-static int prefHeight = 480;				// Fullscreen mode height.
-static int prefDepth = 32;					// Fullscreen mode bit depth.
-static int prefRefresh = 0;					// Fullscreen mode refresh rate. Set to 0 to use default rate.
-
 // Markers.
 ARMarkerNFT *markersNFT = NULL;
 int markersNFTCount = 0;
@@ -137,16 +122,12 @@ static ARUint8 *videoFrame = NULL;
 static int videoFrameSize;
 AR_PIXEL_FORMAT pixFormat = AR_PIXEL_FORMAT_RGBA;
 
-// ============================================================================
-//	Function prototypes
-// ============================================================================
-static int setupCamera(const char *cparam_name, int xsize, int ysize);
-static int initNFT(ARParamLT *cparamLT);
-static int loadNFTData(void);
-static void cleanup(void);
-// ============================================================================
-//	Functions
-// ============================================================================
+static int ARCONTROLLER_NOT_FOUND = -1;
+static int MULTIMARKER_NOT_FOUND = -2;
+static int MARKER_INDEX_OUT_OF_BOUNDS = -3;
+
+std::unordered_map<int, arNFTController> arNFTControllers;
+
 /*
 int main(int argc, char** argv)
 {
@@ -206,9 +187,12 @@ int main(int argc, char** argv)
 	return 0;
 }
 */
+extern "C" {
 
-static int setupCamera(const char *cparam_name, int xsize, int ysize)
+int setupCamera(const char *cparam_name, int xsize, int ysize, int id)
 {
+		if (arNFTControllers.find(id) == arNFTControllers.end()) { return -1; }
+		arNFTController *arc = &(arNFTControllers[id]);
 		ARParam			cparam;
     ARLOGi("Camera image size (x,y) = (%d,%d)\n", xsize, ysize);
 
@@ -236,7 +220,7 @@ static int setupCamera(const char *cparam_name, int xsize, int ysize)
     ARLOG("*** Camera Parameter ***\n");
     arParamDisp(&cparam);
 #endif
-    if ((_arNFTController.gCparamLT = arParamLTCreate(&cparam, AR_PARAM_LT_DEFAULT_OFFSET)) == NULL) {
+    if (( arc->gCparamLT = arParamLTCreate(&cparam, AR_PARAM_LT_DEFAULT_OFFSET)) == NULL) {
         ARLOGe("setupCamera(): Error: arParamLTCreate.\n");
         return (FALSE);
     }
@@ -245,7 +229,7 @@ static int setupCamera(const char *cparam_name, int xsize, int ysize)
 }
 
 // Modifies globals: kpmHandle, ar2Handle.
-static int initNFT(ARParamLT *cparamLT)
+int initNFT(ARParamLT *cparamLT)
 {
     ARLOGd("Initialising NFT.\n");
     //
@@ -288,7 +272,7 @@ static int initNFT(ARParamLT *cparamLT)
 }
 
 // Modifies globals: threadHandle, surfaceSet[], surfaceSetCount
-static int unloadNFTData(void)
+int unloadNFTData(void)
 {
     int i, j;
 
@@ -310,7 +294,7 @@ static int unloadNFTData(void)
 
 // References globals: markersNFTCount
 // Modifies globals: threadHandle, surfaceSet[], surfaceSetCount, markersNFT[]
-static int loadNFTData(void)
+int loadNFTData(void)
 {
     int i;
     KpmRefDataSet *refDataSet;
@@ -372,7 +356,7 @@ static int loadNFTData(void)
     return (TRUE);
 }
 
-static void cleanup(void)
+void cleanup(void)
 {
     if (markersNFT) deleteMarkers(&markersNFT, &markersNFTCount);
 
@@ -387,9 +371,6 @@ static void cleanup(void)
 			videoFrame = NULL;
 			videoFrameSize = 0;
 		}
-#ifdef _WIN32
-	CoUninitialize();
-#endif
 }
 /*
 static void mainLoop(void)
@@ -504,4 +485,6 @@ static void mainLoop(void)
 	}
 }
 */
-//#include "ARBindEM.cpp"
+}
+
+#include "ARBindEM.cpp"

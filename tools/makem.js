@@ -35,7 +35,7 @@ var BUILD_HTML5 = 'nftSimple.js';
 var MAIN_SOURCES = [
 	'ARMarkerNFT.c',
 	'trackingSub.c',
-	'nftSimple.c'
+	'nftSimple.cpp'
 ];
 
 MAIN_SOURCES = MAIN_SOURCES.map(function(src) {
