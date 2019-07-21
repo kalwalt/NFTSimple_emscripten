@@ -99,6 +99,13 @@
 struct Test {
 	int numb;
 };
+
+struct arNFTController {
+	ARParamLT *gCparamLT;
+};
+
+struct arNFTController _arNFTController;
+
 // Preferences.
 static int prefWindowed = TRUE;
 static int prefWidth = 640;					// Fullscreen mode width.
@@ -133,7 +140,7 @@ AR_PIXEL_FORMAT pixFormat = AR_PIXEL_FORMAT_RGBA;
 // ============================================================================
 //	Function prototypes
 // ============================================================================
-static int setupCamera(const char *cparam_name, int xsize, int ysize, ARParamLT **cparamLT_p);
+static int setupCamera(const char *cparam_name, int xsize, int ysize);
 static int initNFT(ARParamLT *cparamLT);
 static int loadNFTData(void);
 static void cleanup(void);
@@ -200,9 +207,9 @@ int main(int argc, char** argv)
 }
 */
 
-static int setupCamera(const char *cparam_name, int xsize, int ysize, ARParamLT **cparamLT_p)
+static int setupCamera(const char *cparam_name, int xsize, int ysize)
 {
-    ARParam			cparam;
+		ARParam			cparam;
     ARLOGi("Camera image size (x,y) = (%d,%d)\n", xsize, ysize);
 
 	// Get the format in which the camera is returning pixels.
@@ -229,7 +236,7 @@ static int setupCamera(const char *cparam_name, int xsize, int ysize, ARParamLT 
     ARLOG("*** Camera Parameter ***\n");
     arParamDisp(&cparam);
 #endif
-    if ((*cparamLT_p = arParamLTCreate(&cparam, AR_PARAM_LT_DEFAULT_OFFSET)) == NULL) {
+    if ((_arNFTController.gCparamLT = arParamLTCreate(&cparam, AR_PARAM_LT_DEFAULT_OFFSET)) == NULL) {
         ARLOGe("setupCamera(): Error: arParamLTCreate.\n");
         return (FALSE);
     }
@@ -497,3 +504,4 @@ static void mainLoop(void)
 	}
 }
 */
+//#include "ARBindEM.cpp"

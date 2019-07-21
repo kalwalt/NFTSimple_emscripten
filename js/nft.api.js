@@ -36,10 +36,13 @@
             return {}; // Compiling asynchronously, no exports.
         }
     }
+  var NFTController = function(){
+    console.log('NFT ready');
+  };
 
-  function setupCamera(xsize, ysize){
-    nft.setupCamera(xsize, ysize)
-  }
+  NFTController.prototype.setupCamera = function(src, xsize, ysize){
+    nft.setupCamera(src, xsize, ysize);
+  };
 
   var Test = function(text){
     var numb = 0;
@@ -61,7 +64,11 @@
 
   function initNFT(){
 
-  }
+  };
+
+  function setupCamera(src, xsize, ysize){
+    Module._setupCamera(src, xsize, ysize);
+  };
 
   // ARToolKit exported JS API
   //
@@ -72,11 +79,12 @@
     BARCODE_MARKER: 1,
 
     //addNFTMarker: addNFTMarker
+    setupCamera: setupCamera
 
   };
 
   var FUNCTIONS = [
-    'setupCamera',
+    //'setupCamera',
     'initNFT',
 
     'unloadNFTData',
@@ -89,6 +97,11 @@
     FUNCTIONS.forEach(function(n) {
       nft[n] = Module[n];
     })
+
+    for (var m in Module) {
+      if (m.match(/^NFT/))
+      nft[m] = Module[m];
+    }
   }
 
 
@@ -96,6 +109,7 @@
   /* Exports */
 	window.nft = nft;
   window.Test = Test;
+  window.NFTController = NFTController;
   window.initCamera = initCamera;
 
 	if (window.Module) {
