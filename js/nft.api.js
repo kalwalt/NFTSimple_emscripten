@@ -76,9 +76,9 @@
     Module._setupCamera(src, xsize, ysize);
   };
 
-  /*function cleanup(){
+  function cleanup(){
     Module.cleanup();
-  };*/
+  };
 
   // ARToolKit exported JS API
   //
