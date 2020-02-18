@@ -41,7 +41,7 @@
     console.log('NFT ready');
   };
 
-  NFTController.prototype.setupCamera = function(src, xsize, ysize){
+  NFTController.prototype.loadCamera = function(src, xsize, ysize){
     nft.setupCamera(src, xsize, ysize);
   };
 
@@ -73,7 +73,7 @@
   };
 
   function setupCamera(src, xsize, ysize){
-    Module._setupCamera(src, xsize, ysize);
+    Module._setCamera(src, xsize, ysize);
   };
 
   function cleanup(){
@@ -89,13 +89,13 @@
     BARCODE_MARKER: 1,
 
     //addNFTMarker: addNFTMarker
-    //setupCamera: setupCamera
+    setupCamera: setupCamera
     //cleanup: cleanup
 
   };
 
   var FUNCTIONS = [
-    'setupCamera',
+
     'initNFT',
 
     'unloadNFTData',

@@ -189,7 +189,7 @@ int main(int argc, char** argv)
 */
 extern "C" {
 
-int setupCamera(const char *cparam_name, int xsize, int ysize, int id)
+int setCamera(std::string cparam_name, int xsize, int ysize, int id)
 {
 		if (arNFTControllers.find(id) == arNFTControllers.end()) { return -1; }
 		arNFTController *arc = &(arNFTControllers[id]);
@@ -203,11 +203,9 @@ int setupCamera(const char *cparam_name, int xsize, int ysize, int id)
 	}
 
 	// Load the camera parameters, resize for the window and init.
-	if (cparam_name && *cparam_name) {
-        if (arParamLoad(cparam_name, 1, &cparam) < 0) {
-		    ARLOGe("setupCamera(): Error loading parameter file %s for camera.\n", cparam_name);
-            return (FALSE);
-        }
+	if (arParamLoad(cparam_name.c_str(), 1, &cparam) < 0) {
+		    ARLOGe("setupCamera(): Error loading parameter file %s for camera.\n", cparam_name.c_str());
+        return (FALSE);
     } else {
         arParamClearWithFOVy(&cparam, xsize, ysize, M_PI_4); // M_PI_4 radians = 45 degrees.
         ARLOGw("Using default camera parameters for %dx%d image size, 45 degrees vertical field-of-view.\n", xsize, ysize);

@@ -4,7 +4,7 @@ using namespace emscripten;
 
 EMSCRIPTEN_BINDINGS(constant_bindings) {
 
-  //function("_setupCamera", &setupCamera);
+  function("_setCamera", &setCamera);
   function("cleanup", &cleanup);
   /* errors */
 	constant("ERROR_ARCONTROLLER_NOT_FOUND", ARCONTROLLER_NOT_FOUND);
