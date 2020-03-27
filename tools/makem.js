@@ -35,7 +35,7 @@ var BUILD_HTML5 = 'nftSimple.js';
 var MAIN_SOURCES = [
 	'ARMarkerNFT.c',
 	'trackingSub.c',
-	'nftSimple.c'
+	'nftSimple.cpp'
 ];
 
 MAIN_SOURCES = MAIN_SOURCES.map(function(src) {
@@ -51,6 +51,7 @@ var ar_sources = [
 	'Video/video.c',
 	//'Video/video2.c',
 	'ARUtil/log.c',
+	'ARUtil/time.c',
   'ARUtil/file_utils.c',
 	'ARUtil/thread_sub.c',
 	//'Video/videoLuma.c',
@@ -119,42 +120,33 @@ var FLAGS = '' + OPTIMIZE_FLAGS;
 FLAGS += ' -Wno-warn-absolute-paths ';
 FLAGS += ' -s TOTAL_MEMORY=' + MEM + ' ';
 FLAGS += ' -s USE_ZLIB=1';
+FLAGS += ' -s USE_LIBJPEG=1';
 //FLAGS += ' -s ERROR_ON_UNDEFINED_SYMBOLS=0';
 //FLAGS += ' -s NO_BROWSER=1 '; // for 20k less
 FLAGS += ' --memory-init-file 0 '; // for memless file
 //FLAGS += ' -s BINARYEN_TRAP_MODE=clamp'
-FLAGS += ' -DUSE_GSTREAMER_1 ';
 
-//var PRE_FLAGS = ' --pre-js ' + path.resolve(__dirname, '../js/artoolkit.api.js') +' ';
+var PRE_FLAGS = ' --pre-js ' + path.resolve(__dirname, '../js/nft.api.js') +' ';
 
 FLAGS += ' --bind ';
 FLAGS += ' -msse';
 FLAGS += ' -msse2';
 FLAGS += ' -msse3';
 FLAGS += ' -mssse3';
-var CFLAGS = ' -Wimplicit-function-declaration -DHAVE_NFT=1 -DUSE_GSTREAMER_1 -s USE_PTHREADS=1 -I/usr/include/gstreamer-1.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include'
+var CFLAGS = ' -Wimplicit-function-declaration -DHAVE_NFT=1 -s USE_PTHREADS=1'
 /* DEBUG FLAGS */
 var DEBUG_FLAGS = ' -g ';
-// DEBUG_FLAGS += ' -s ASSERTIONS=2 '
 DEBUG_FLAGS += ' -s ASSERTIONS=1 '
-//DEBUG_FLAGS += ' --profiling '
-// DEBUG_FLAGS += ' -s EMTERPRETIFY_ADVISE=1 '
 DEBUG_FLAGS += ' -s ALLOW_MEMORY_GROWTH=1';
 DEBUG_FLAGS += '  -s DEMANGLE_SUPPORT=1 ';
+
+var EMRUN_FLAGS = ' --emrun '
 
 var INCLUDES = [
 	path.resolve(__dirname, ARTOOLKIT5_ROOT + '/include'),
 	OUTPUT_PATH,
 	SOURCE_PATH,
 	path.resolve(__dirname, ARTOOLKIT5_ROOT + '/lib/SRC/KPM/FreakMatcher'),
-	//path.resolve(__dirname, ARTOOLKIT5_ROOT + '/lib/SRC/GL'),
-	//path.resolve(__dirname, ARTOOLKIT5_ROOT + '/lib/SRC/Video'),
-	path.resolve(__dirname, ARTOOLKIT5_ROOT + '/../jpeg-6b'),
-	//path.resolve(__dirname, ARTOOLKIT5_ROOT + '/Video'),
-	//path.resolve(__dirname, SOURCE_PATH + '/'),
-	//'lib/SRC/KPM/FreakMatcher',
-	// 'include/macosx-universal/',
-	// '../jpeg-6b',
 ].map(function(s) { return '-I' + s }).join(' ');
 
 function format(str) {
@@ -164,20 +156,6 @@ function format(str) {
 	return str;
 }
 
-
-// Lib JPEG Compilation
-
-// Memory Allocations
-// jmemansi.c jmemname.c jmemnobs.c jmemdos.c jmemmac.c
-var libjpeg_sources = 'jcapimin.c jcapistd.c jccoefct.c jccolor.c jcdctmgr.c jchuff.c \
-		jcinit.c jcmainct.c jcmarker.c jcmaster.c jcomapi.c jcparam.c \
-		jcphuff.c jcprepct.c jcsample.c jctrans.c jdapimin.c jdapistd.c \
-		jdatadst.c jdatasrc.c jdcoefct.c jdcolor.c jddctmgr.c jdhuff.c \
-		jdinput.c jdmainct.c jdmarker.c jdmaster.c jdmerge.c jdphuff.c \
-		jdpostct.c jdsample.c jdtrans.c jerror.c jfdctflt.c jfdctfst.c \
-		jfdctint.c jidctflt.c jidctfst.c jidctint.c jidctred.c jquant1.c \
-		jquant2.c jutils.c jmemmgr.c \
-		jmemansi.c'.split(/\s+/).join(' /home/walter/kalwalt-github/jsartoolkit5/emscripten/jpeg-6b/')
 function clean_builds() {
 	try {
 		var stats = fs.statSync(OUTPUT_PATH);
@@ -207,19 +185,14 @@ var compile_arlib = format(EMCC + ' ' + INCLUDES + ' '
  	+ FLAGS + ' ' + DEFINES + ' -o {OUTPUT_PATH}libkpm.bc ',
  		OUTPUT_PATH);
 
-var compile_libjpeg = format(EMCC + ' ' + INCLUDES + ' '
-    + path.resolve(__dirname, LIBJPEG_ROOT) + '/' + libjpeg_sources
-	+ FLAGS + ' ' + DEFINES + ' -o {OUTPUT_PATH}libjpeg.bc ',
-		OUTPUT_PATH);
-
-var compile_combine = format(EMCC + ' ' + INCLUDES + ' '
+/*var compile_combine = format(EMCC + ' ' + INCLUDES + ' '
 	+ ' {OUTPUT_PATH}*.bc ' + MAIN_SOURCES
 	+ FLAGS + ' -s WASM=0' + ' '  + DEBUG_FLAGS + DEFINES + ' -o {OUTPUT_PATH}{BUILD_FILE} ',
-	OUTPUT_PATH, OUTPUT_PATH, BUILD_DEBUG_FILE);
+	OUTPUT_PATH, OUTPUT_PATH, BUILD_DEBUG_FILE);*/
 
 var compile_html5 = format(EMCC + ' '  + INCLUDES + ' '
 	+ ' {OUTPUT_PATH}*.bc ' + MAIN_SOURCES
-	+ FLAGS  + ' ' + CFLAGS + DEFINES +' -s LEGACY_GL_EMULATION=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0' + ' -o {OUTPUT_PATH}{BUILD_FILE} ',
+	+ FLAGS  + ' ' + CFLAGS + DEFINES + PRE_FLAGS + EMRUN_FLAGS + ' -s WASM=1' + ' -s ERROR_ON_UNDEFINED_SYMBOLS=0' + ' -o {OUTPUT_PATH}{BUILD_FILE} ',
 	OUTPUT_PATH, OUTPUT_PATH, BUILD_HTML5);
 /*
 /*
@@ -262,13 +235,6 @@ function addJob(job) {
 
 addJob(clean_builds);
 addJob(compile_arlib);
-//addJob(compile_kpm);
-// compile_kpm
-addJob(compile_libjpeg);
-//addJob(compile_combine);
-//addJob(compile_wasm);
-//addJob(compile_combine_min);
 addJob(compile_html5);
-// addJob(compile_all);
 
 runJob();

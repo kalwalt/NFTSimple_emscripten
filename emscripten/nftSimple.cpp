@@ -56,23 +56,14 @@
 //	Includes
 // ============================================================================
 
-#ifdef _WIN32
-#  include <windows.h>
-#  define _USE_MATH_DEFINES
-#  define snprintf _snprintf
-#endif
 #include <stdio.h>
-#include <string.h>
-#include <math.h>
-#ifdef __APPLE__
-#  include <GLUT/glut.h>
-#else
-#  include <GL/glut.h>
-#endif
-#ifdef __EMSCRIPTEN__
+#include <string>
+#include <vector>
+#include <unordered_map>
+//#include <assert.h>
+//#include <math.h>
+
 #include <emscripten.h>
-#include <emscripten/html5.h>
-#endif
 
 #include <AR/ar.h>
 #include <AR/arMulti.h>
@@ -90,7 +81,7 @@
 //	Constants
 // ============================================================================
 
-#define PAGES_MAX               10          // Maximum number of pages expected. You can change this down (to save memory) or up (to accomodate more pages.)
+#define PAGES_MAX           10          // Maximum number of pages expected. You can change this down (to save memory) or up (to accomodate more pages.)
 
 #define VIEW_SCALEFACTOR		1.0			// Units received from ARToolKit tracking will be multiplied by this factor before being used in OpenGL drawing.
 #define VIEW_DISTANCE_MIN		10.0		// Objects closer to the camera than this will not be displayed. OpenGL units.
@@ -99,13 +90,13 @@
 // ============================================================================
 //	Global variables
 // ============================================================================
+struct Test {
+	int numb;
+};
 
-// Preferences.
-static int prefWindowed = TRUE;
-static int prefWidth = 640;					// Fullscreen mode width.
-static int prefHeight = 480;				// Fullscreen mode height.
-static int prefDepth = 32;					// Fullscreen mode bit depth.
-static int prefRefresh = 0;					// Fullscreen mode refresh rate. Set to 0 to use default rate.
+struct arNFTController {
+	ARParamLT *gCparamLT;
+};
 
 // Markers.
 ARMarkerNFT *markersNFT = NULL;
@@ -124,66 +115,36 @@ static long                 gCallCountMarkerDetect = 0;
 static int gWindowW;
 static int gWindowH;
 static ARParamLT *gCparamLT = NULL;
-static ARGL_CONTEXT_SETTINGS_REF gArglSettings = NULL;
-static int gDrawRotate = FALSE;
-static float gDrawRotateAngle = 0;			// For use in drawing.
 static ARdouble cameraLens[16];
 
 //Video data
 static ARUint8 *videoFrame = NULL;
 static int videoFrameSize;
+AR_PIXEL_FORMAT pixFormat = AR_PIXEL_FORMAT_RGBA;
 
+static int ARCONTROLLER_NOT_FOUND = -1;
+static int MULTIMARKER_NOT_FOUND = -2;
+static int MARKER_INDEX_OUT_OF_BOUNDS = -3;
 
-// ============================================================================
-//	Function prototypes
-// ============================================================================
-static int initCamera(int xsize, ysize);
-static int setupCamera(const char *cparam_name, char *vconf, ARParamLT **cparamLT_p);
-static int initNFT(ARParamLT *cparamLT, AR_PIXEL_FORMAT pixFormat);
-static int loadNFTData(void);
-static void cleanup(void);
-static void Keyboard(unsigned char key, int x, int y);
-static void Visibility(int visible);
-static void Reshape(int w, int h);
-static void Display(void);
+std::unordered_map<int, arNFTController> arNFTControllers;
 
-// ============================================================================
-//	Functions
-// ============================================================================
-
+/*
 int main(int argc, char** argv)
 {
+
 	char glutGamemode[32];
 	char *cparam_name = NULL;
-	char vconf[] = "";
-    const char markerConfigDataFilename[] = "Data2/markers.dat";
+  const char markerConfigDataFilename[] = "app/Data2/markers.dat";
+
 
 #ifdef DEBUG
     arLogLevel = AR_LOG_LEVEL_DEBUG;
 #endif
 
-    //
-	// Library inits.
-	//
 
-	glutInit(&argc, argv);
 
-    arUtilChangeToResourcesDirectory(AR_UTIL_RESOURCES_DIRECTORY_BEHAVIOR_BEST, NULL);
 
-	//
-	// Video setup.
-	//
-
-#ifdef _WIN32
-	CoInitialize(NULL);
-#endif
-
-	if (!initCamera(prefWidth, prefHeight)){
-		ARLOGe("main(): Unable to set up web camera.\n");
-		exit(-1);
-	}
-
-	if (!setupCamera(cparam_name, vconf, &gCparamLT)) {
+	if (!setupCamera(cparam_name,640, 480, &gCparamLT)) {
 		ARLOGe("main(): Unable to set up AR camera.\n");
 		exit(-1);
 	}
@@ -195,34 +156,12 @@ int main(int argc, char** argv)
     // Create the OpenGL projection from the calibrated camera parameters.
     arglCameraFrustumRH(&(gCparamLT->param), VIEW_DISTANCE_MIN, VIEW_DISTANCE_MAX, cameraLens);
 
-    if (!initNFT(gCparamLT, arVideoGetPixelFormat())) {
+    if (!initNFT(gCparamLT)) {
 		ARLOGe("main(): Unable to init NFT.\n");
 		exit(-1);
     }
 
-	//
-	// Graphics setup.
-	//
-
-	// Set up GL context(s) for OpenGL to draw into.
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
-	if (!prefWindowed) {
-		if (prefRefresh) sprintf(glutGamemode, "%ix%i:%i@%i", prefWidth, prefHeight, prefDepth, prefRefresh);
-		else sprintf(glutGamemode, "%ix%i:%i", prefWidth, prefHeight, prefDepth);
-		glutGameModeString(glutGamemode);
-		glutEnterGameMode();
-	} else {
-		glutInitWindowSize(gCparamLT->param.xsize, gCparamLT->param.ysize);
-		glutCreateWindow(argv[0]);
-	}
-
-	// Setup ARgsub_lite library for current OpenGL context.
-	if ((gArglSettings = arglSetupForCurrentContext(&(gCparamLT->param), arVideoGetPixelFormat())) == NULL) {
-		ARLOGe("main(): arglSetupForCurrentContext() returned error.\n");
-		cleanup();
-		exit(-1);
-	}
-	arUtilTimerReset();
+		arUtilTimerReset();
 
     //
     // Markers setup.
@@ -243,132 +182,30 @@ int main(int argc, char** argv)
 		cleanup();
 		exit(-1);
     }
+	//arUtilTimerReset();
 
-    // Start the video.
-    if (arVideoCapStart() != 0) {
-    	ARLOGe("setupCamera(): Unable to begin camera data capture.\n");
-		return (FALSE);
-	}
-
-	// Register GLUT event-handling callbacks.
-	// NB: mainLoop() is registered by Visibility.
-	glutDisplayFunc(Display);
-	glutReshapeFunc(Reshape);
-	//glutVisibilityFunc(Visibility);
-	glutKeyboardFunc(Keyboard);
-
-	glutMainLoop();
-
-	return (0);
+	return 0;
 }
+*/
+extern "C" {
 
-// Something to look at, draw a rotating colour cube.
-static void DrawCube(void)
+int setCamera(std::string cparam_name, int xsize, int ysize, int id)
 {
-    // Colour cube data.
-    int i;
-	float fSize = 40.0f;
-    const GLfloat cube_vertices [8][3] = {
-        /* +z */ {0.5f, 0.5f, 0.5f}, {0.5f, -0.5f, 0.5f}, {-0.5f, -0.5f, 0.5f}, {-0.5f, 0.5f, 0.5f},
-        /* -z */ {0.5f, 0.5f, -0.5f}, {0.5f, -0.5f, -0.5f}, {-0.5f, -0.5f, -0.5f}, {-0.5f, 0.5f, -0.5f} };
-    const GLubyte cube_vertex_colors [8][4] = {
-        {255, 255, 255, 255}, {255, 255, 0, 255}, {0, 255, 0, 255}, {0, 255, 255, 255},
-        {255, 0, 255, 255}, {255, 0, 0, 255}, {0, 0, 0, 255}, {0, 0, 255, 255} };
-    const GLubyte cube_faces [6][4] = { /* ccw-winding */
-        /* +z */ {3, 2, 1, 0}, /* -y */ {2, 3, 7, 6}, /* +y */ {0, 1, 5, 4},
-        /* -x */ {3, 0, 4, 7}, /* +x */ {1, 2, 6, 5}, /* -z */ {4, 5, 6, 7} };
-
-    glPushMatrix(); // Save world coordinate system.
-    glRotatef(gDrawRotateAngle, 0.0f, 0.0f, 1.0f); // Rotate about z axis.
-    glScalef(fSize, fSize, fSize);
-    glTranslatef(0.0f, 0.0f, 0.5f); // Place base of cube on marker surface.
-    glDisable(GL_LIGHTING);
-    glDisable(GL_TEXTURE_2D);
-    glDisable(GL_BLEND);
-    glColorPointer(4, GL_UNSIGNED_BYTE, 0, cube_vertex_colors);
-    glVertexPointer(3, GL_FLOAT, 0, cube_vertices);
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_COLOR_ARRAY);
-    for (i = 0; i < 6; i++) {
-        glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_BYTE, &(cube_faces[i][0]));
-    }
-    glDisableClientState(GL_COLOR_ARRAY);
-    glColor4ub(0, 0, 0, 255);
-    for (i = 0; i < 6; i++) {
-        glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_BYTE, &(cube_faces[i][0]));
-    }
-    glPopMatrix();    // Restore world coordinate system.
-}
-
-static void DrawCubeUpdate(float timeDelta)
-{
-	if (gDrawRotate) {
-		gDrawRotateAngle += timeDelta * 45.0f; // Rotate cube at 45 degrees per second.
-		if (gDrawRotateAngle > 360.0f) gDrawRotateAngle -= 360.0f;
-	}
-}
-
-static int initCamera(int xsize, int ysize){
-	videoFrameSize = 640 * 480 * 4 * sizeof(ARUint8);
-	videoFrame = (ARUint8*) malloc(videoFrameSize);
-	videoFrame = EM_ASM_INT({
-		// Grab elements, create settings, etc.
-	var video = document.getElementById('video');
-
-	// Get access to the camera!
-	if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    	// Not adding `{ audio: true }` since we only want video now
-    	navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
-        	//video.src = window.URL.createObjectURL(stream);
-        	video.srcObject = stream;
-        	video.play();
-					return video.data;
-    			});
-				}
-			}
-		);
-		ARLOGe("video data: ", videoFrame);
-	return(TRUE);
-}
-
-static int setupCamera(const char *cparam_name, char *vconf, ARParamLT **cparamLT_p)
-{
-    ARParam			cparam;
-	int				xsize, ysize;
-    AR_PIXEL_FORMAT pixFormat;
-
-    // Open the video path.
-  //  if (arVideoOpen(vconf) < 0) {
-  //  	ARLOGe("setupCamera(): Unable to open connection to camera.\n");
-  //  	return (FALSE);
-	//}
-
-    // Find the size of the window.
-  //  if (arVideoGetSize(&xsize, &ysize) < 0) {
-  //      ARLOGe("setupCamera(): Unable to determine camera frame size.\n");
-  //      arVideoClose();
-  //      return (FALSE);
-  //  }
-		xsize = 640;
-		ysize = 480;
+		if (arNFTControllers.find(id) == arNFTControllers.end()) { return -1; }
+		arNFTController *arc = &(arNFTControllers[id]);
+		ARParam			cparam;
     ARLOGi("Camera image size (x,y) = (%d,%d)\n", xsize, ysize);
 
 	// Get the format in which the camera is returning pixels.
-	//pixFormat = arVideoGetPixelFormat();
-	pixFormat = AR_PIXEL_FORMAT_RGBA;
 	if (pixFormat == AR_PIXEL_FORMAT_INVALID) {
     	ARLOGe("setupCamera(): Camera is using unsupported pixel format.\n");
-        //arVideoClose();
 		return (FALSE);
 	}
 
 	// Load the camera parameters, resize for the window and init.
-	if (cparam_name && *cparam_name) {
-        if (arParamLoad(cparam_name, 1, &cparam) < 0) {
-		    ARLOGe("setupCamera(): Error loading parameter file %s for camera.\n", cparam_name);
-            //arVideoClose();
-            return (FALSE);
-        }
+	if (arParamLoad(cparam_name.c_str(), 1, &cparam) < 0) {
+		    ARLOGe("setupCamera(): Error loading parameter file %s for camera.\n", cparam_name.c_str());
+        return (FALSE);
     } else {
         arParamClearWithFOVy(&cparam, xsize, ysize, M_PI_4); // M_PI_4 radians = 45 degrees.
         ARLOGw("Using default camera parameters for %dx%d image size, 45 degrees vertical field-of-view.\n", xsize, ysize);
@@ -381,9 +218,8 @@ static int setupCamera(const char *cparam_name, char *vconf, ARParamLT **cparamL
     ARLOG("*** Camera Parameter ***\n");
     arParamDisp(&cparam);
 #endif
-    if ((*cparamLT_p = arParamLTCreate(&cparam, AR_PARAM_LT_DEFAULT_OFFSET)) == NULL) {
+    if (( arc->gCparamLT = arParamLTCreate(&cparam, AR_PARAM_LT_DEFAULT_OFFSET)) == NULL) {
         ARLOGe("setupCamera(): Error: arParamLTCreate.\n");
-        arVideoClose();
         return (FALSE);
     }
 
@@ -391,7 +227,7 @@ static int setupCamera(const char *cparam_name, char *vconf, ARParamLT **cparamL
 }
 
 // Modifies globals: kpmHandle, ar2Handle.
-static int initNFT(ARParamLT *cparamLT, AR_PIXEL_FORMAT pixFormat)
+int initNFT(ARParamLT *cparamLT)
 {
     ARLOGd("Initialising NFT.\n");
     //
@@ -434,7 +270,7 @@ static int initNFT(ARParamLT *cparamLT, AR_PIXEL_FORMAT pixFormat)
 }
 
 // Modifies globals: threadHandle, surfaceSet[], surfaceSetCount
-static int unloadNFTData(void)
+int unloadNFTData(void)
 {
     int i, j;
 
@@ -456,7 +292,7 @@ static int unloadNFTData(void)
 
 // References globals: markersNFTCount
 // Modifies globals: threadHandle, surfaceSet[], surfaceSetCount, markersNFT[]
-static int loadNFTData(void)
+int loadNFTData(void)
 {
     int i;
     KpmRefDataSet *refDataSet;
@@ -475,6 +311,7 @@ static int loadNFTData(void)
         // Load KPM data.
         KpmRefDataSet  *refDataSet2;
         ARLOGi("Reading %s.fset3\n", markersNFT[i].datasetPathname);
+				//printf( markersNFT[i].datasetPathname);
         if (kpmLoadRefDataSet(markersNFT[i].datasetPathname, "fset3", &refDataSet2) < 0 ) {
             ARLOGe("Error reading KPM data from %s.fset3\n", markersNFT[i].datasetPathname);
             markersNFT[i].pageNo = -1;
@@ -517,70 +354,41 @@ static int loadNFTData(void)
     return (TRUE);
 }
 
-static void cleanup(void)
+void cleanup(void)
 {
     if (markersNFT) deleteMarkers(&markersNFT, &markersNFTCount);
 
     // NFT cleanup.
     unloadNFTData();
-	ARLOGd("Cleaning up ARToolKit NFT handles.\n");
+		ARLOGd("Cleaning up ARToolKit NFT handles.\n");
     ar2DeleteHandle(&ar2Handle);
     kpmDeleteHandle(&kpmHandle);
     arParamLTFree(&gCparamLT);
-
-    // OpenGL cleanup.
-    arglCleanup(gArglSettings);
-    gArglSettings = NULL;
-
-    // Camera cleanup.
-	arVideoCapStop();
-	arVideoClose();
-#ifdef _WIN32
-	CoUninitialize();
-#endif
+		if (videoFrame) {
+			free(videoFrame);
+			videoFrame = NULL;
+			videoFrameSize = 0;
+		}
 }
-
-static void Keyboard(unsigned char key, int x, int y)
-{
-	switch (key) {
-		case 0x1B:						// Quit.
-		case 'Q':
-		case 'q':
-			cleanup();
-			exit(0);
-			break;
-		case ' ':
-			gDrawRotate = !gDrawRotate;
-			break;
-		case '?':
-		case '/':
-			ARLOG("Keys:\n");
-			ARLOG(" q or [esc]    Quit demo.\n");
-			ARLOG(" ? or /        Show this help.\n");
-			ARLOG("\nAdditionally, the ARVideo library supplied the following help text:\n");
-			arVideoDispOption();
-			break;
-		default:
-			break;
-	}
-}
-
+/*
 static void mainLoop(void)
 {
+  // example: draw a moving rectangle
 	static int ms_prev;
 	int ms;
 	float s_elapsed;
 	AR2VideoBufferT *image;
 
-    // NFT results.
-    static int detectedPage = -2; // -2 Tracking not inited, -1 tracking inited OK, >= 0 tracking online on page.
-    static float trackingTrans[3][4];
+  // NFT results.
+  static int detectedPage = -2; // -2 Tracking not inited, -1 tracking inited OK, >= 0 tracking online on page.
+  static float trackingTrans[3][4];
 
 
-    int             i, j, k;
+  int             i, j, k;
 
 	// Find out how long since mainLoop() last ran.
-	ms = glutGet(GLUT_ELAPSED_TIME);
+	//ms = glutGet(GLUT_ELAPSED_TIME);
+	ms = 120;
 	s_elapsed = (float)(ms - ms_prev) * 0.001f;
 	if (s_elapsed < 0.01f) return; // Don't update more often than 100 Hz.
 	ms_prev = ms;
@@ -672,97 +480,9 @@ static void mainLoop(void)
                 }
             }
         }
-
-		// Tell GLUT the display has changed.
-		glutPostRedisplay();
 	}
 }
-
-//
-//	This function is called on events when the visibility of the
-//	GLUT window changes (including when it first becomes visible).
-//
-static void Visibility(int visible)
-{
-	if (visible == GLUT_VISIBLE) {
-		glutIdleFunc(mainLoop);
-	} else {
-		glutIdleFunc(NULL);
-	}
+*/
 }
 
-//
-//	This function is called when the
-//	GLUT window is resized.
-//
-static void Reshape(int w, int h)
-{
-    gWindowW = w;
-    gWindowH = h;
-
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glViewport(0, 0, (GLsizei) w, (GLsizei) h);
-
-	// Call through to anyone else who needs to know about window sizing here.
-}
-
-//
-// This function is called when the window needs redrawing.
-//
-static void Display(void)
-{
-    int i;
-
-	// Select correct buffer for this context.
-	glDrawBuffer(GL_BACK);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear the buffers for new frame.
-
-	arglDispImage(gArglSettings);
-
-    // Set up 3D mode.
-	glMatrixMode(GL_PROJECTION);
-#ifdef ARDOUBLE_IS_FLOAT
-	glLoadMatrixf(cameraLens);
-#else
-	glLoadMatrixd(cameraLens);
-#endif
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-    glEnable(GL_DEPTH_TEST);
-
-    // Set any initial per-frame GL state you require here.
-    // --->
-
-    // Lighting and geometry that moves with the camera should be added here.
-    // (I.e. should be specified before marker pose transform.)
-    // --->
-
-    for (i = 0; i < markersNFTCount; i++) {
-
-        if (markersNFT[i].valid) {
-
-#ifdef ARDOUBLE_IS_FLOAT
-            glLoadMatrixf(markersNFT[i].pose.T);
-#else
-            glLoadMatrixd(markersNFT[i].pose.T);
-#endif
-            // All lighting and geometry to be drawn relative to the marker goes here.
-            // --->
-            DrawCube();
-        }
-    }
-
-    // Set up 2D mode.
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(0, (GLdouble)gWindowW, 0, (GLdouble)gWindowH, -1.0, 1.0);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    glDisable(GL_LIGHTING);
-    glDisable(GL_DEPTH_TEST);
-
-    // Add your own 2D overlays here.
-    // --->
-
-	glutSwapBuffers();
-}
+#include "ARBindEM.cpp"

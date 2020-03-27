@@ -16,4 +16,3 @@ My goal is to test the threaded version for the NFT marker. The idea started bec
 
 I use emmscripten 1.38.31 and artoolkit5.
 OS: Ubuntu 16.04.2
-
